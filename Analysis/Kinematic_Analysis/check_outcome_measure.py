@@ -3,7 +3,7 @@
 # Import useful libraries
 import os
 import sys
-sys.path.insert(1, "C:/CODE/ac_toolbox/")
+sys.path.insert(1, "../Code")
 import utils as u
 import numpy as np
 from scipy.stats import percentileofscore
@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 
 # Set feature to analyze
-feature_name = "peak_speed"
+feature_name = "mean_speed"
 
 # Set normalization window and cut-off of interest
 cutoff = 5
@@ -43,7 +43,6 @@ feature_all_outlier = u.fill_outliers_nan(feature_all.copy())
 
 # Loop over patients
 for i in range(n_datasets):
-#for i in [10]:
 
     # Plot
     plt.figure(figsize=(10, 5))
@@ -72,7 +71,6 @@ for i in range(n_datasets):
         feature = feature[:, cutoff:]
         # Normalize to average of the next 5 movements
         feature = u.norm_perc(feature, n_norm=n_norm)
-        #feature = u.norm(feature, n_norm=n_norm)
 
         plt.subplot(1, 2, 2)
         plt.plot(feature.T, label="normalized", color="blue", alpha=0.5)

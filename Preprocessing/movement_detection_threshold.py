@@ -9,7 +9,7 @@ matplotlib.use('TkAgg')
 import warnings
 warnings.filterwarnings("ignore")
 
-n_samps = 18
+n_samps = 18 # Number of samples to use for "baseline/no movement threshold"
 med = "Off"
 root = f"../../Data/{med}/raw_data/"
 files_list = []
@@ -38,7 +38,7 @@ for file in files_list:
 
         for i_trial in range(1, n_trials+1):
 
-            # Extract the raw speed while on the target
+            # Extract the raw speed while on the target (no movement should occur)
             mask = np.where((data[:, 7] == i_block) & (data[:, 8] == i_trial) & (data[:, 9] == 1))
             data_mask = np.squeeze(data[mask, 4])
 
@@ -46,7 +46,8 @@ for file in files_list:
             data_all.extend(data_mask[-n_samps:])
 
 data_all = np.array(data_all)
-# PLot histogram
+
+# Plot histogram
 plt.figure(figsize=(10, 5))
 plt.hist(data_all, bins=100, color="dimgrey")
 # Compute zscore

@@ -1,0 +1,83 @@
+%% Plot the center of the stimulation electrode in the STN color coded by a variable 
+clear all; 
+close all;
+addpath(genpath("C:\CODE\ac_toolbox\"))
+
+%% Load variable of interest 
+variable_path = "C:\Users\ICN\Charité - Universitätsmedizin Berlin\Interventional Cognitive Neuromodulation - " + ...
+    "PROJECT ReinforceVigor\vigor_stim_task\Data\Off\processed_data\" + ...
+    "res_mean_speed_mean_mean_5_5.mat";
+variable = load(variable_path);
+variable = variable.res(:, 2);
+variable(4) = [];
+
+%% Define the colors according to the variable
+% Make sure the maximum absolute values in the positive and negative
+% dimension are the same
+neg_id = variable < 0;
+abs_variable = abs(variable);
+norm_variable = normalize(abs_variable, 'range', [0, 0.5]);
+norm_variable(neg_id) = norm_variable(neg_id) * -1;
+norm_variable = norm_variable + 0.5; 
+
+% choose colormap and colors according to normalized values
+n = 256;
+cmap = redblue(n); 
+color_indices = round(norm_variable * (n - 1)) + 1;
+colors = cmap(color_indices, :);
+colorbar
+
+%% Load csv file containing mne coordinates
+info_path = "C:\Users\ICN\Charité - Universitätsmedizin Berlin\Interventional Cognitive Neuromodulation - " + ...
+    "PROJECT ReinforceVigor\vigor_stim_task\Data\Dataset_list_Off.xlsx";
+info = readtable(info_path);
+hand = info([2:4 6:25], :).Hand;
+
+% Define subject of interest
+subjects = [2:25];
+subjects = [2:4 6:25];
+
+%% Open a mnifigure
+figure = ea_mnifigure;
+
+%% Load VTAs
+path = "C:\\Users\\ICN\\Documents\\Try_without_Sdrive\\LeadDBSDataset\\derivatives\\leaddbs\\sub-%s" + ...
+    "\\stimulations\\MNI152NLin2009bAsym\\gs_test\\sub-%s_sim-binary_model-simbio_hemi-%s.mat";
+
+alpha = 0.3;
+sides = ["R", "L"];
+for i=1:length(subjects)
+    sub_id = string(subjects(i));
+    for j=1:length(sides)
+        path = "C:\\Users\\ICN\\Documents\\Try_without_Sdrive\\LeadDBSDataset\\derivatives\\leaddbs\\sub-%s" + ...
+        "\\stimulations\\MNI152NLin2009bAsym\\gs_test\\sub-%s_sim-binary_model-simbio_hemi-%s.mat";
+        VTA_path = char(sprintf(path, sub_id, sub_id, sides(j))); 
+        VTA = load(VTA_path).vatfv;
+        color = colors(i, :);
+        patch('Faces',VTA.faces,'Vertices',VTA.vertices,'facecolor',color,'edgecolor',color, 'facealpha', 0, 'edgealpha', alpha);
+
+    end
+end
+
+%% Add the STN on both sides 
+color = "white";
+alpha = 0.4;
+%ea_mnifigure;
+load([ea_space([],'atlases'),'DISTAL Nano (Ewert 2017)',filesep,'atlas_index.mat']); % manually load definition of DISTAL atlas.
+rSTN=atlases.roi{4,1}.fv;
+patch('Faces',rSTN.faces,'Vertices',rSTN.vertices,'facecolor',color,'edgecolor',color, 'facealpha', 0, 'edgealpha', alpha);
+lSTN=atlases.roi{4,2}.fv;
+patch('Faces',lSTN.faces,'Vertices',lSTN.vertices,'facecolor',color,'edgecolor',color, 'facealpha', 0, 'edgealpha', alpha);
+
+%% Add the ROIs 
+nii = ea_load_nii(char("C:\Users\ICN\Documents\Try_without_Sdrive\atlas\Supp_Motor_Area.nii"));
+fv = ea_nii2fv(nii);
+color = "#B3F2DD";
+alpha = 0.5;
+patch('Faces',fv.faces,'Vertices',fv.vertices,'facecolor',color,'edgecolor',color, 'facealpha', 0, 'edgealpha', alpha);
+
+nii = ea_load_nii(char("C:\Users\ICN\Documents\Try_without_Sdrive\atlas\Put-.nii"));
+fv = ea_nii2fv(nii);
+color = "#f2b3c8";
+patch('Faces',fv.faces,'Vertices',fv.vertices,'facecolor',color,'edgecolor',color, 'facealpha', 0, 'edgealpha', alpha);
+

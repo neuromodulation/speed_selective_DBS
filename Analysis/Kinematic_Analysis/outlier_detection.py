@@ -1,13 +1,8 @@
-# Find a good method for outlier detection
+# Find the outlier threshold
 
 # Import useful libraries
 import os
-import sys
-sys.path.insert(1, "C:/CODE/ac_toolbox/")
-import utils as u
 import numpy as np
-from scipy.stats import percentileofscore, zscore
-import scipy.stats
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')

@@ -1,0 +1,104 @@
+%% Plot the stimulation averaged as a heatmat (averaged across hemispheres), store and plot in surfice
+clear all; 
+close all;
+
+%% Set path where to find nifti files
+paths = ["C:\Users\ICN\Documents\Try_without_Sdrive\LeadDBSDataset\derivatives\leaddbs\sub-", "\stimulations\MNI152NLin2009bAsym\gs_test\"];
+
+% Array of patients of interest
+subjects = [2:4 6:25];
+n_subjects = length(subjects); 
+
+%% Loop over patients 
+files_lr_all = {};
+for i=1:length(subjects)
+    sub_id = string(subjects(i));
+    path_sub = paths(1) + sub_id + paths(2);
+    files = dir(path_sub);
+
+    % Get nii files of VTA
+    for i_file=1:length(files)
+        name = files(i_file).name;
+        if endsWith(name, 'sim-binary_model-simbio_hemi-L.nii')
+            file_l = char(path_sub+name);
+        end
+        if endsWith(name, 'sim-binary_model-simbio_hemi-R.nii')
+            file_r = char(path_sub+name);
+        end
+    end
+
+    % Flip from left to right
+    file_l_flipped = strcat(file_l(1:end-5), 'L_flipped.nii');
+    ea_flip_lr(file_l, file_l_flipped);
+
+    % Sum VTAs vom left and right
+    file_lr = strcat(file_l(1:end-5), 'LR_sum.nii');
+    flags = struct();
+    flags.mask = 0;
+    flags.dmtx = 0;  % Data is not matrix, leave as default
+    flags.interp = 1;  % Interpolation method (1 = trilinear)
+    spm_imcalc({file_r, file_l_flipped}, file_lr, 'i1+i2', flags); 
+    files_lr_all{end+1} = file_lr;
+end
+
+%% Load variable of interest 
+variable_path = "C:\Users\ICN\Charité - Universitätsmedizin Berlin\Interventional Cognitive Neuromodulation - " + ...
+    "PROJECT ReinforceVigor\vigor_stim_task\Data\Off\processed_data\" + ...
+    "res_mean_speed_mean_mean_5_5.mat";
+variable = load(variable_path);
+variable = variable.res(:, 2);
+variable(4) = [];
+
+%% Sum VTAs weighted by the behaviorable variable (stim effect)
+% Cretae the expression
+% Generate expression
+expression = '';
+for i = 1:n_subjects
+    expression = [expression, 'i', num2str(i), '*' , num2str(variable(i))];
+    expression = [expression, ' + '];
+end
+expression = ['(',expression(1:end-3), ')/' num2str(n_subjects)]; 
+%% Apply
+output_path = 'C:\Users\ICN\Documents\Try_without_Sdrive\stim_lr.nii';
+spm_imcalc(files_lr_all, output_path, expression); 
+
+% %% Loop over patients 
+% nii_L = [];
+% nii_R = [];
+% for i=1:length(subjects)
+%     sub_id = string(subjects(i));
+%     path_sub = paths(1) + sub_id + paths(2);
+%     files = dir(path_sub);
+% 
+%     % Get nii files of VTA
+%     for i_file=1:length(files)
+%         name = files(i_file).name;
+%         if endsWith(name, 'sim-binary_model-simbio_hemi-L.nii')
+%             % Load nifti file
+%             nii = ea_load_nii(char(path_sub+name));
+%             % Replace != values with the stimulation effect strength
+%             nii.img(nii.img > 0) = variable(i);
+%             nii.img(nii.img == 0) = NaN;
+%             nii_L(:, :, :, i) = nii.img;
+%         end
+%         if endsWith(name, 'sim-binary_model-simbio_hemi-R.nii')
+%             % Load nifti file
+%             nii = ea_load_nii(char(path_sub+name));
+%             % Replace != values with the stimulation effect strength
+%             nii.img(nii.img > 0) = variable(i);
+%             nii.img(nii.img == 0) = NaN;
+%             nii_R(:, :, :, i) = nii.img;
+%         end
+%     end
+% end
+% %% Average across subjects
+% nii_r = nanmean(nii_R, 4);
+% nii_l = nanmean(nii_L, 4);
+% nii_l(isnan(nii_l)) = 0;
+% nii_r(isnan(nii_r)) = 0;
+% 
+% %% Save ad nii
+% nii.fname = 'C:\Users\ICN\Documents\Try_without_Sdrive\stim_r.nii';
+% spm_write_vol(nii, nii_r);
+% nii.fname = 'C:\Users\ICN\Documents\Try_without_Sdrive\stim_l.nii';
+% spm_write_vol(nii, nii_l);

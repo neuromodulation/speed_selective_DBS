@@ -1,7 +1,9 @@
 # Optimize the features using a bayesian hyperparameter search and nested-cross validation
+# Speed up the calculation by parallelizing the computation for all channel combinations
+# Run this on ICN 1
 
 import os
-
+from joblib import Parallel, delayed
 import mne_bids
 import numpy as np
 import mne
@@ -27,14 +29,15 @@ warnings.filterwarnings("ignore")
 random.seed(420)
 
 
-# Load the data
-sub = "EL012"
-path = f"..\\..\\..\\Data\\Off\\Neurophys\\Artifact_removal\\{sub}_cleaned.fif"
-raw = mne.io.read_raw_fif(path).load_data()
+# Define parameters
+n_outer = 6
+n_inner = 4
+n_optimization_rounds = 20
+n_iterations_cb = 30
 
-# Define the number of folds in the nested-cross validation
-n_outer = 8
-n_inner = 8
+# Load the data
+path = f"decoding_results\\EL012.fif"
+raw = mne.io.read_raw_fif(path).load_data()
 
 sfreq = raw.info["sfreq"]
 target_chan_name = raw.info["ch_names"][-1]
@@ -61,16 +64,15 @@ peaks = np.zeros(raw._data.shape[-1])
 peaks[peaks_idx_ext] = 1
 u.add_new_channel(raw, peaks[np.newaxis, :], "PEAKS", type="misc")
 
-#settings_decoding = ecog_names + lfp_names + ["ECoG_combined", "LFP_combined", "ECoG_LFP_combined"]
-settings_decoding = ecog_names + lfp_names + ["ECoG_LFP_combined", "LFP_combined", "ECoG_combined"]
+# Define all channels and channel combinations to test
+settings_decoding = ["ECoG_combined", "ECoG_LFP_combined", "LFP_combined"] + ecog_names + lfp_names
+#settings_decoding = ["ECoG_combined", "ECoG_LFP_combined", "LFP_combined"] #+ ecog_names + lfp_names
 
-# Loop over settings
-for s, setting in enumerate(settings_decoding[::-1]):
 
-    print(setting)
+def run_nested_cross_val(setting):
 
     # Save results in excel sheet
-    filename = f"decoding_results/feature_model_optimization_{setting}.xlsx"
+    filename = f"decoding_results2/feature_model_optimization_{setting}.xlsx"
 
     # Set channels
     if "combined" not in setting:
@@ -109,7 +111,7 @@ for s, setting in enumerate(settings_decoding[::-1]):
         test_idx_all.append(test_index)
 
     # Loop over the outer folds
-    for n in range(n_outer):
+    for count, n in enumerate(range(3, n_outer)):
 
         def objective_function(samp_freq, seg_ms, n_stack, learning_rate, depth):
             # Set analysis parameters
@@ -140,11 +142,10 @@ for s, setting in enumerate(settings_decoding[::-1]):
 
             data = blocks_all[:, train_idx_all[n]]
 
-            features = stream.run(data=data, out_path_root="..\\..\\..\\Data\\Off\\processed_data\\",
-                                  folder_name=f"feature_optimization")
+            features = stream.run(data=data, out_path_root="decoding_results2\\", folder_name=f"optimization_{setting}")
             feature_reader = nm_analysis.FeatureReader(
-                feature_dir="..\\..\\..\\Data\\Off\\processed_data\\",
-                feature_file="feature_optimization",
+                feature_dir=f"decoding_results2\\",
+                feature_file=f"optimization_{setting}",
             )
 
             # Set the label
@@ -152,7 +153,7 @@ for s, setting in enumerate(settings_decoding[::-1]):
             feature_reader.label = feature_reader.feature_arr[feature_reader.label_name]
 
             # Setup the model and train
-            model = CatBoostRegressor(iterations=50,
+            model = CatBoostRegressor(iterations=n_iterations_cb,
                                       depth=int(depth),
                                       learning_rate=learning_rate
                                       )
@@ -179,6 +180,12 @@ for s, setting in enumerate(settings_decoding[::-1]):
                 df_per = feature_reader.get_dataframe_performances(performances)
                 perf = np.array(df_per["performance_test"])[-1]
 
+                # Save decoding model
+                #best_decoder_path = f"decoding_results/model_{setting}_fold_{n}_{samp_freq}_{seg_ms}_{n_stack}_{learning_rate}_{depth}.p"
+
+                #with open(best_decoder_path, "wb") as output:
+                #    pickle.dump(feature_reader.decoder, output)
+
             except Exception as e:
                     perf = 0
                     print(e)
@@ -191,10 +198,10 @@ for s, setting in enumerate(settings_decoding[::-1]):
             try:
                 wb = load_workbook(filename)
                 try:
-                    ws = wb.worksheets[n]
+                    ws = wb.worksheets[count]
                 except:
                     wb.create_sheet(f"Fold {n}")
-                    ws = wb.worksheets[n]
+                    ws = wb.worksheets[count]
                     ws.append(headers_row)
             except FileNotFoundError:
                 wb = Workbook()
@@ -216,12 +223,12 @@ for s, setting in enumerate(settings_decoding[::-1]):
         )
 
         optimizer.maximize(
-            init_points=20,
-            n_iter=1,
+            init_points=n_optimization_rounds,
+            n_iter=3,
         )
 
         # Get the optimal parameters yielding the highest performance
-        df = pd.read_excel(filename, sheet_name=f"Fold {n}")
+        df = pd.read_excel(filename, sheet_name=f"Fold {count}")
         samp_freq, seg_ms, n_stack, depth, learning_rate, _ = df.loc[df['all'].idxmax()]
 
         # Compute performance on the test set using the optimal parameters
@@ -260,7 +267,7 @@ for s, setting in enumerate(settings_decoding[::-1]):
         X_test_long, y_test = u.append_previous_n_samples(X=X_test,y=y_test, n=int(n_stack))
 
         # Setup the model and train
-        model = CatBoostRegressor(iterations=50,
+        model = CatBoostRegressor(iterations=n_iterations_cb,
                                   depth=int(depth),
                                   learning_rate=learning_rate
                                   )
@@ -277,6 +284,10 @@ for s, setting in enumerate(settings_decoding[::-1]):
 
         # Save decoding performance in excel sheet
         wb = load_workbook(filename)
-        ws = wb.worksheets[n]
+        ws = wb.worksheets[count]
         ws.append(row)
         wb.save(filename)
+
+
+# Run parallelize
+Parallel(n_jobs=len(settings_decoding))(delayed(run_nested_cross_val)(setting) for setting in settings_decoding)

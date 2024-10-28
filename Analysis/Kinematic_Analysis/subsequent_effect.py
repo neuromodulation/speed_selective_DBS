@@ -1,12 +1,11 @@
-# Analyze and plot the instantaneous effect of the stimulation (next n movements)
+# Results Figure 2: Effect on subsequent speed
+# Slow vs Fast
 
 # Import useful libraries
 import os
 import sys
-sys.path.insert(1, "C:/CODE/ac_toolbox/")
+sys.path.insert(1, "../Code")
 import utils as u
-import pandas as pd
-from scipy.io import savemat
 import numpy as np
 from scipy.stats import percentileofscore
 import scipy.stats
@@ -17,8 +16,8 @@ matplotlib.use('TkAgg')
 
 # Set parameters
 med = "Off"
-feature_name = "peak_speed"
-n = 7
+feature_name = "mean_speed"
+n = 3
 method = "mean"
 
 # Load matrix containing the feature values
@@ -37,13 +36,13 @@ feature = u.fill_outliers_nan(feature)
 res = np.zeros((n_datasets, 2, n, 2))
 for i in range(n_datasets):
 
-    # Loop over the n next movements to look at for the instantaneous effect
+    # Loop over conditions
     for j in range(2):
 
         feature_stim_all = []
         feature_similar_all = []
 
-        # Loop over conditions
+        # Loop over the n subsequent movements
         for k in range(n):
 
             # Get the feature and stimulation for one patient
@@ -78,8 +77,8 @@ for i in range(n_datasets):
                 feature_similar_0 = feature_similar_n
 
             # Calculate the average feature
-            tmp_stim = ((feature_stim_n - feature_stim_0[:len(feature_stim_n)]))# / feature_stim_0[:len(feature_stim_n)]) * 100
-            tmp_similar = ((feature_similar_n - feature_similar_0[:len(feature_similar_n)]))# / feature_similar_0[:len(feature_similar_n)]) * 100
+            tmp_stim = ((feature_stim_n - feature_stim_0[:len(feature_stim_n)])/ feature_stim_0[:len(feature_stim_n)]) * 100
+            tmp_similar = ((feature_similar_n - feature_similar_0[:len(feature_similar_n)])/ feature_similar_0[:len(feature_similar_n)]) * 100
             if method == "mean":
                 res[i, j, k, 0] = np.nanmean(tmp_stim)
                 res[i, j, k, 1] = np.nanmean(tmp_similar)
@@ -88,101 +87,66 @@ for i in range(n_datasets):
                 res[i, j, k, 1] = np.nanmedian(tmp_similar)
 
 # Plot
-# Prepare plotting
-#res[:, :, 1, :] = np.mean([res[:, :, 1, :], res[:, :, 3, :], res[:, :, 5, :]], axis=0)
-#res[:, :, 1, :] = np.mean([res[:, :, 1, :], res[:, :, 3, :]], axis=0)
-#res[:, :, 3, :] = np.mean([res[:, :, 1, :], res[:, :, 3, :]], axis=0)
-#res[:, :, 2, :] = np.mean([res[:, :, 2, :], res[:, :, 4, :], res[:, :, 6, :]], axis=0)
-#res[:, :, 2, :] = np.mean([res[:, :, 2, :], res[:, :, 4, :]], axis=0)
-fig = plt.figure(figsize=(5, 4.2))
-colors_op = np.array([["#00863b", "#b2dac4"], ["#3b0086", "#b099ce"], ["#203D64", "#8f9eb1"]])
-conditions = ["Slow", "Fast", "Difference \nFast-Slow"]
-box_width = 0.3
-bps = []
-for i in range(3):
-    plt.subplot(1, 3, i+1)
-    if i == 2:
-        # Plot the difference fast-slow for similar and stimulated movements
-        res_tmp = res[:, 1, :, :] - res[:, 0, :, :]
-    else:
-        res_tmp = res[:, i, :, :]
-    for j in range(1, n):
-        bar_pos = [j - (box_width / 1.5), j + (box_width / 1.5)]
-        for k in range(2):
-            bp = plt.boxplot(x=res_tmp[:, j, k],
-                             positions=[bar_pos[k]],
-                             widths=box_width,
-                             patch_artist=True,
-                             boxprops=dict(facecolor=colors_op[i, k], color=colors_op[i, k]),
-                             capprops=dict(color=colors_op[i, k]),
-                             whiskerprops=dict(color=colors_op[i, k]),
-                             medianprops=dict(color="indianred", linewidth=0),
-                             flierprops=dict(marker='o', markerfacecolor="dimgray", markersize=5,
-                                             markeredgecolor='none')
-                             )
-            bps.append(bp)
-        # Add the individual lines
-        for dat in res_tmp[:, j, :]:
-            plt.plot(bar_pos[0], dat[0], marker='o', markersize=2, color="dimgray")
-            plt.plot(bar_pos[1], dat[1], marker='o', markersize=2, color="dimgray")
-            # Add line connecting the points
-            plt.plot(bar_pos, dat, color="black", linewidth=0.5, alpha=0.3)
+colors = ["#00863b", "#3b0086"]
+colors_op = ["#b2dac4", "#b099ce"]
+titles = ["Opposite direction", "Same direction"]
+box_width = 0.4
+fontsize = 7
+for i in range(1, n):
 
-        # Add statistics
-        z, p = scipy.stats.wilcoxon(res_tmp[:, j, 0], res_tmp[:, j, 1])
-        """res_perm = scipy.stats.permutation_test(data=(res_tmp[:, j, 0], res_tmp[:, j, 1]),
-                                           statistic=u.diff_mean_statistic,
-                                           n_resamples=10000, permutation_type="samples")
-        p = res_perm.pvalue"""
-        if p < 0.001:
-            text = "***"
-        elif p < 0.01:
-            text = "**"
-        elif p < 0.05:
-            text = "*"
-        else:
-            text = "n.s."
-        print(p)
-        ymin, ymax = plt.ylim()
-        plt.plot(bar_pos, [ymax, ymax], color="black", linewidth=1)
-        plt.text(np.mean(bar_pos), ymax, text, ha="center", va="bottom", fontsize=16)
+    # Calculate the difference between stimulated and not stimulated movement
+    res_tmp = res[:, :, :, 0] - res[:, :, :, 1]
+
+    fig = plt.figure(figsize=(1, 1.65))
+    bar_pos = [0 - (box_width / 1.5), 1 + (box_width / 1.5)]
+
+    for l in range(2):
+        bp = plt.boxplot(x=res_tmp[:, l, i],
+                         positions=[bar_pos[l]],
+                         widths=box_width,
+                         patch_artist=True,
+                         boxprops=dict(facecolor=colors_op[l], color=colors_op[l]),
+                         capprops=dict(color=colors_op[l]),
+                         whiskerprops=dict(color=colors_op[l]),
+                         medianprops=dict(color="indianred", linewidth=0),
+                         flierprops=dict(marker='o', markerfacecolor="dimgray", markersize=0,
+                                         markeredgecolor='none')
+                         )
+    # Add the individual lines
+    for dat in res_tmp[:, :, i]:
+        plt.plot(bar_pos[0], dat[0], marker='o', markersize=0.5, color=colors[0])
+        plt.plot(bar_pos[1], dat[1], marker='o', markersize=0.5, color=colors[1])
+        # Add line connecting the points
+        plt.plot(bar_pos, dat, color="black", linewidth=0.5, alpha=0.3)
+
+    # Add statistics
+    #z, p = scipy.stats.wilcoxon(res_tmp[:, i, 0], res_tmp[:, i, 1])
+    res_perm = scipy.stats.permutation_test(data=(res_tmp[:, 0, i], res_tmp[:, 1, i]),
+                                       statistic=u.diff_mean_statistic,
+                                       n_resamples=10000, permutation_type="samples")
+    p = res_perm.pvalue
+    text = u.get_sig_text(p)
+    ymin, ymax = plt.ylim()
+    ymax +=2
+    plt.plot([bar_pos[0], bar_pos[0], bar_pos[1], bar_pos[1]], [ymax - 1, ymax, ymax, ymax - 1], color="black",
+            linewidth=1)
+    plt.text(np.mean(bar_pos), ymax, text, ha="center", va="bottom", fontsize=fontsize)
 
     # Adjust plot
-    plt.xticks([j], [conditions[i]], fontsize=13)#ticks=np.arange(1, n), labels=[f"next {x}" for x in range(1, n)], fontsize=11)
-    plt.ylim([-30, 40])
     plt.axhline(0, linewidth=1, color="black", linestyle="dashed")
-    plt.yticks(fontsize=12)
+    plt.yticks(fontsize=fontsize-2)
+    plt.xticks([0, 1],["Slow", "Fast"], fontsize=fontsize)
+    plt.yticks([-10, 10], [-10, 10], fontsize=fontsize)
+    plt.ylim([-12, 15])
     feature_name_plot = feature_name.replace("_", " ")
-    if i == 0:
-        plt.ylabel(f"Change in speed [%]", fontsize=15)
-        u.despine(['right', 'top'])
-    elif i == 1:
-        plt.yticks([])
-        u.despine(['right', 'top', 'left'])
-    else:
-        plt.yticks([])
-        u.despine(['top', 'left'])
-    #plt.title(conditions[i], fontsize=13, y=1.1)
+    plt.ylabel(f"Stimulation-induced \nspeed shift [%]", fontsize=fontsize)
+    u.despine(['right', 'top'])
+    plt.title(titles[i-1], fontsize=fontsize)
 
-# Add legend
-"""plt.legend([bps[-2]["boxes"][0], bps[-1]["boxes"][0]], ['Stimulated', 'Not \nstimulated'],
-           bbox_to_anchor=(0.9, 0.6),
-           prop={'size': 13})"""
-
-plt.subplots_adjust(left=0.15, wspace=0.05)
-#plt.suptitle(med, fontsize=14, y=1.1)
-
-# Save
-plot_name = os.path.basename(__file__).split(".")[0]
-dir_name = os.path.dirname(os.path.realpath(__file__)).split("\\")[-1]
-plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_{feature_name}.svg", format="svg", bbox_inches="tight", transparent=True)
-plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_{feature_name}.png", format="png", bbox_inches="tight", transparent=True)
+    # Save
+    plot_name = os.path.basename(__file__).split(".")[0]
+    dir_name = os.path.dirname(os.path.realpath(__file__)).split("\\")[-1]
+    plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_{feature_name}_{i}.pdf", format="pdf", bbox_inches="tight", transparent=True)
+    plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_{feature_name}_{i}.png", format="png", bbox_inches="tight", transparent=True)
 
 plt.show()
-
-# Save difference in after second move
-res_tmp = res[:, 1, 2, :] - res[:, 0, 2, :]
-res = res_tmp[:, 0] - res_tmp[:, 1]
-np.save(f"../../../Data/{med}/processed_data/res_inst_{feature_name}_{method}.npy", res)
-# As mat file for imaging analysis
-savemat(f"../../../Data/{med}/processed_data/res_inst_{feature_name}_{method}.mat", {"res": res})

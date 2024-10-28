@@ -3,7 +3,7 @@
 # Import useful libraries
 import os
 import sys
-sys.path.insert(1, "C:/CODE/ac_toolbox/")
+sys.path.insert(1, "../Code")
 import utils as u
 import numpy as np
 from scipy.stats import percentileofscore

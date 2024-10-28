@@ -1,0 +1,2 @@
+C:\Users\ICN\Documents\Try_without_Sdrive\LeadDBSDataset\derivatives\leaddbs\sub-25\stimulations\MNI152NLin2009bAsym\gs_test\sub-25_sim-binary_model-simbio_hemi-R.nii
+C:\Users\ICN\Documents\Try_without_Sdrive\LeadDBSDataset\derivatives\leaddbs\sub-25\stimulations\MNI152NLin2009bAsym\gs_test\sub-25_sim-binary_model-simbio_hemi-R.nii

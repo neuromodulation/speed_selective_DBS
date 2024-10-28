@@ -1,0 +1,17 @@
+name	x	y	z	material	manufacturer	hemisphere	type	impedance	dimension	group	size
+LFP_R_01_STN_MT	12.2614	-15.475	-9.43142	platinum/iridium	Medtronic	right	depth	n/a	[1x8]	DBS_right	6
+LFP_R_02_STN_MT	13.2579	-14.1758	-7.80434	platinum/iridium	Medtronic	right	depth	n/a	[1x8]	DBS_right	1.5
+LFP_R_03_STN_MT	12.3432	-14.5429	-7.10262	platinum/iridium	Medtronic	right	depth	n/a	[1x8]	DBS_right	1.5
+LFP_R_04_STN_MT	13.3542	-15.1615	-7.04011	platinum/iridium	Medtronic	right	depth	n/a	[1x8]	DBS_right	1.5
+LFP_R_05_STN_MT	14.0185	-13.3448	-5.66846	platinum/iridium	Medtronic	right	depth	n/a	[1x8]	DBS_right	1.5
+LFP_R_06_STN_MT	13.0902	-13.725	-4.95117	platinum/iridium	Medtronic	right	depth	n/a	[1x8]	DBS_right	1.5
+LFP_R_07_STN_MT	14.1187	-14.3481	-4.90145	platinum/iridium	Medtronic	right	depth	n/a	[1x8]	DBS_right	1.5
+LFP_R_08_STN_MT	14.5613	-12.9815	-2.86259	platinum/iridium	Medtronic	right	depth	n/a	[1x8]	DBS_right	6
+LFP_L_01_STN_MT	-11.0965	-16.0984	-7.99791	platinum/iridium	Medtronic	left	depth	n/a	[1x8]	DBS_left	6
+LFP_L_02_STN_MT	-11.441	-14.6695	-6.14304	platinum/iridium	Medtronic	left	depth	n/a	[1x8]	DBS_left	1.5
+LFP_L_03_STN_MT	-12.4675	-15.2369	-6.07234	platinum/iridium	Medtronic	left	depth	n/a	[1x8]	DBS_left	1.5
+LFP_L_04_STN_MT	-11.6164	-15.6803	-5.29099	platinum/iridium	Medtronic	left	depth	n/a	[1x8]	DBS_left	1.5
+LFP_L_05_STN_MT	-12.1898	-13.7729	-3.90155	platinum/iridium	Medtronic	left	depth	n/a	[1x8]	DBS_left	1.5
+LFP_L_06_STN_MT	-13.2294	-14.3515	-3.84314	platinum/iridium	Medtronic	left	depth	n/a	[1x8]	DBS_left	1.5
+LFP_L_07_STN_MT	-12.3704	-14.802	-3.05191	platinum/iridium	Medtronic	left	depth	n/a	[1x8]	DBS_left	1.5
+LFP_L_08_STN_MT	-13.3974	-13.3975	-1.16453	platinum/iridium	Medtronic	left	depth	n/a	[1x8]	DBS_left	6
