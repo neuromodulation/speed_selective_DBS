@@ -3,7 +3,7 @@
 # Import useful libraries
 import os
 import sys
-sys.path.append('../Code')
+sys.path.append('../../../Code')
 import utils as u
 import numpy as np
 from scipy.stats import percentileofscore
@@ -28,16 +28,17 @@ feature = feature[:, :, 0, :]
 np.apply_along_axis(lambda m: u.fill_outliers_nan(m), axis=2, arr=feature)
 
 # Prepare plotting
-fig, ax = plt.subplots(1, 1, figsize=(6, 4.5))
+fig, ax = plt.subplots(1, 1, figsize=(1.5, 1.5))
 box_width = 0.25
-bar_pos = [-(box_width/1.5), (box_width/1.5)]
+bar_pos = [-(box_width), (box_width)]
 colors = ["#00863b", "#3b0086"]
 colors_op = ["#b2dac4", "#b099ce"]
 labels = ["Slow", "Fast"]
+fontsize = 6
 feature_stim = np.zeros((stim.shape[0], 2))
 
 # Loop over conditions
-for j in range(2):
+for i, j in enumerate([1, 0]):
 
     # Get the average feature of the stimulated trials
     for k in range(stim.shape[0]):
@@ -45,25 +46,24 @@ for j in range(2):
 
     # Plot axis on both sides
     bp = ax.boxplot(x=feature_stim[:, j],
-                positions=[bar_pos[j]],
+                positions=[bar_pos[i]],
                 widths=box_width,
                 patch_artist=True,
                 boxprops=dict(facecolor=colors_op[j], color=colors_op[j]),
                 capprops=dict(color=colors_op[j]),
                 whiskerprops=dict(color=colors_op[j]),
-                medianprops=dict(color=colors[j], linewidth=2),
+                medianprops=dict(color=colors[j], linewidth=1),
                 flierprops=dict(marker='o', markerfacecolor=colors_op[j], markersize=5, markeredgecolor='none')
                 )
 
 # Add the individual lines
 for dat in feature_stim:
-    ax.plot(bar_pos[0], dat[0], marker='o', markersize=2.5, color=colors[0])
-    ax.plot(bar_pos[1], dat[1], marker='o', markersize=2.5, color=colors[1])
+    ax.plot(bar_pos[1], dat[0], marker='o', markersize=1, color=colors[0])
+    ax.plot(bar_pos[0], dat[1], marker='o', markersize=1, color=colors[1])
     # Add line connecting the points
-    ax.plot(bar_pos, dat, color="black", linewidth=0.6, alpha=0.3)
-
+    ax.plot(bar_pos[::-1], dat, color="black", linewidth=0.4, alpha=0.3)
 # Add statistics
-r = scipy.stats.permutation_test(data=(feature_stim[:, 0], feature_stim[:, 1]),
+"""r = scipy.stats.permutation_test(data=(feature_stim[:, 0], feature_stim[:, 1]),
                                  statistic=u.diff_mean_statistic, alternative='two-sided',
                                  n_resamples=100000, permutation_type="samples")
 p = r.pvalue
@@ -72,14 +72,14 @@ ymin, ymax = ax.get_ylim()
 ax.plot(bar_pos, [ymax, ymax], color="black", linewidth=1)
 ax.text(0, ymax, text, ha="center", va="bottom", fontsize=16)
 print(f"min {np.round(min(feature_stim[:, 0]), 2)}, max {np.round(max(feature_stim[:, 0]), 2)}, min {np.round(min(feature_stim[:, 1]), 2)}, max {np.round(max(feature_stim[:, 1]), 2)}")
+"""
 
 # Adjust plot
-ax.set_xticks(bar_pos, ["Slow", "Fast"])
-y_ticks = ax.get_yticklabels()
-ax.set_yticklabels(y_ticks, fontsize=12)
+ax.set_xticks(bar_pos, ["Fast", "Slow"], fontsize=fontsize)
+ax.yaxis.set_tick_params(labelsize=fontsize)
 feature_name_plot = feature_name.replace("_", " ")
-ax.set_ylabel("Percentile\nof stimulated movements [%]", fontsize=13)
-ax.spines["top"].set_visible(False)
+#ax.set_ylabel("Percentile\nof stimulated movements [%]", fontsize=fontsize)
+ax.spines[["top", "right"]].set_visible(False)
 plt.subplots_adjust(bottom=0.15, left=0.15, right=0.85, wspace=0.4)
 
 # Save

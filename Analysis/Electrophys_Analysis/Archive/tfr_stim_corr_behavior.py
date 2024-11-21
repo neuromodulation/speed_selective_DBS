@@ -1,56 +1,48 @@
 # Correlate stimulation-induced changes in the TFR with changes in behavior
 
 import os
-
-import mne_bids
 import numpy as np
 import matplotlib.pyplot as plt
 import mne
 import os
-from mne_bids import BIDSPath, read_raw_bids, print_dir_tree, make_report
 import sys
-from mne_bids import BIDSPath, read_raw_bids, find_matching_paths
-from scipy.stats import pearsonr, spearmanr, ttest_ind
+from scipy.stats import pearsonr, spearmanr, ttest_ind, zscore
 import seaborn as sb
-sys.path.insert(1, "C:/CODE/ac_toolbox/")
+sys.path.insert(1, "../../../Code")
 import utils as u
 import matplotlib
-from scipy.ndimage import uniform_filter1d
-from sklearn.preprocessing import minmax_scale
 matplotlib.use('Qt5Agg')
-import matplotlib as mpl
-
-# Export text as regular text instead of paths or using svgfonts
-mpl.rcParams['svg.fonttype'] = 'none'
-
-# Set font to a widely-available but non-default font to show that Affinity
-# ignores font-family
-mpl.rcParams['font.family'] = 'Arial'
-#mpl.rcParams['font.sans-serif'] = 'Helvetica'
 
 # Set parameters
-tmin = -0.75
-tmax = 0.75
-baseline = (None, None)
+tmin = -0.2
+tmax = 0.8
+baseline = (-0.4, -0.1)
 mode = "percent"
-cmap = "jet"
-freq_min = 15
-freq_max = 70
-frequencies = np.arange(freq_min, freq_max, 2)
+cmap = "bwr"
+freq_min = 20
+freq_max = 35
+frequencies = np.arange(freq_min, freq_max, 1)
 fontsize = 7
-bands = [[15, 25], [40, 60]]
-band_names = [f"{x[0]}-{x[1]}" for x in bands]
+band = [20, 35]
+band_names = f"{band[0]}-{band[1]}"
 
 # Load the data
 sub = "EL012"
-path = f"..\\..\\..\\Data\\Off\\Neurophys\\Artifact_removal\\{sub}_cleaned.fif"
+path = f"..\\..\\..\\Data\\Off\\Neurophys\\Artifact_removal\\EL012_cleaned_all_CAR.fif"
 raw = mne.io.read_raw_fif(path).load_data()
+# Add re-references raw channels
+ecog_names = ["ECOG_R_1_CAR_raw", "ECOG_R_2_CAR_raw", "ECOG_R_3_CAR_raw", "ECOG_R_4_CAR_raw", "ECOG_R_5_CAR_raw"]
+og_chan_names = ["ECOG_R_01_SMC_AT", "ECOG_R_02_SMC_AT", "ECOG_R_03_SMC_AT", "ECOG_R_04_SMC_AT", "ECOG_R_05_SMC_AT"]
+for i, chan in enumerate(og_chan_names):
+    new_ch = raw.get_data(chan) - raw.get_data(og_chan_names).mean(axis=0)
+    u.add_new_channel(raw, new_ch, ecog_names[i], type="ecog")
 sfreq = raw.info["sfreq"]
 ch_names = raw.info["ch_names"]
-target_chan_name = ch_names[-1]
+target_chan_names = [f"ECOG_R_{x}_CAR_raw" for x in range(1,6)]
+target_chan_name = target_chan_names[4]
 
 # Filter out line noise
-raw.notch_filter(50)
+#raw.notch_filter(50)
 
 # Extract events
 events = mne.events_from_annotations(raw)[0]
@@ -72,20 +64,18 @@ stim_idx = np.where(stim_idx)[0]
 peak_speed = epochs.get_data(["SPEED_MEAN"])[:, :, epochs.times == 0].squeeze()
 
 # Compute tfr
-tfr = epochs.compute_tfr(method="multitaper", freqs=frequencies, picks=[target_chan_name], average=False)
-# Crop tfr
-tfr.crop(tmin=tmin, tmax=tmax)
+tfr = epochs.compute_tfr(method="morlet", freqs=frequencies, picks=[target_chan_name], n_cycles=5, average=False)
 # Smooth tfr
-tfr.data = uniform_filter1d(tfr.data, size=int(sfreq*0.1), axis=-1)
+#tfr.data = uniform_filter1d(tfr.data, size=int(sfreq*0.1), axis=-1)
 # Decimate tfr
-tfr.decimate(decim=40)
-tfr = tfr.apply_baseline(baseline=(None, None), mode="zscore")
+tfr.decimate(decim=5)
+tfr = tfr.apply_baseline(baseline=baseline, mode=mode)
 
 # Loop over slow amd fast
-names = ["Slow", "Fast", "No stim", "Stim"]
-for i, idx_cond in enumerate([slow_stim_idx, fast_stim_idx, not_stim_idx, stim_idx]):
+names = ["Fast", "Slow", "No stim", "Stim"]
+for i, idx_cond in enumerate([fast_stim_idx, slow_stim_idx, not_stim_idx, stim_idx]):
 
-    # Get the average change in speed in the nexxt-next movement
+    # Get the average change in speed in the next-next movement
     idx_next = idx_cond+2
     remove_idx = idx_next > len(peak_speed) - 1
     idx_next = idx_next[~remove_idx]
@@ -95,48 +85,38 @@ for i, idx_cond in enumerate([slow_stim_idx, fast_stim_idx, not_stim_idx, stim_i
     #peak_speed_next = peak_speed[idx_cond]
 
     # Loop over epochs
-    res = np.zeros((2, len(idx_cond)))
-    for j, idx in enumerate(idx_cond):
-
-        # Get the time of stimulation onset
-        if i < 2:
-            onset_stim = np.where(epochs[idx].get_data(["STIMULATION"])[:, :, ((epochs.times < 0.5) & (epochs.times > -0.5))].squeeze())[0][0]
-            times = epochs.times[(epochs.times < 0.5) & (epochs.times > -0.5)]
-            onset_time = times[onset_stim]
-        else:
-            onset_stim = 0.06
-
-        for k, band in enumerate(bands):
-            # Get the average power
-            res[k, j] = tfr[idx].get_data(fmin=band[0], fmax=band[1], tmin=onset_time+0.25, tmax=onset_time+0.5).mean()
+    res = tfr[idx_cond].get_data(fmin=band[0], fmax=band[1], tmin=0.57, tmax=0.67).mean(axis=(2,3)).squeeze()
 
     # Correlate changes in average power with changes in behavior and plot
-    fig, axes = plt.subplots(2, 2, figsize=(7.5, 5.5))
-    for k, band in enumerate(bands):
-        ax = axes[k, 0]
-        corr, p = pearsonr(res[k, :], peak_speed_next)
-        label = f" R = {np.round(corr, 2)} p = {np.round(p, 4)}"
-        sb.regplot(x=res[k, :], y=peak_speed_next, label=label, scatter_kws={"color": "dimgrey"}, line_kws={"color": "indianred"}, ax=ax)
-        ax.legend()
-        ax.set_title(band_names[k])
-        ax.set_xlabel("power change [%]")
-        ax.set_ylabel("speed change [%]")
+    # Remove outlier
+    idx_out = np.abs(zscore(res)) > 3
+    res = res[~idx_out]
+    idx_cond = idx_cond[~idx_out]
+    peak_speed_next = peak_speed_next[~idx_out]
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7.5, 5.5))
+    corr, p = pearsonr(res, peak_speed_next)
+    label = f" R = {np.round(corr, 2)} p = {np.round(p, 4)}"
+    sb.regplot(x=res, y=peak_speed_next, label=label, scatter_kws={"color": "dimgrey"}, line_kws={"color": "indianred"}, ax=ax1)
+    ax1.legend()
+    #ax1.set_title(band_names[k])
+    ax1.set_xlabel("power change [%]")
+    ax1.set_ylabel("speed change [%]")
 
     # Plot the TFR
     tfr_cond = tfr[idx_cond].copy()
-    tfr_average = tfr_cond.average()#.apply_baseline(baseline=baseline, mode="percent")
+    tfr_average = tfr_cond.average()
     power = tfr_average.data.squeeze()
-    ax = axes[0, 1]
-    im = ax.imshow(power, aspect="auto", origin="lower", cmap=cmap,
-                        extent=(tmin, tmax, np.min(frequencies), np.max(frequencies)))
+    im = ax2.imshow(power, aspect="auto", origin="lower", cmap=cmap,
+                        extent=(tmin, tmax, np.min(frequencies), np.max(frequencies)), vmax=2, vmin=-2)
 
     # Compute the correlation for each TFR entry
-    tfr_data = tfr_cond.data.squeeze()
+    tfr_data = tfr_cond.get_data(tmin=tmin,tmax=tmax).squeeze()
     n_epochs, n_freqs, n_times = tfr_data.shape
+    times = tfr.times[(tfr.times >= tmin) & (tfr.times < tmax)]
     corr_p = np.zeros((2, n_freqs, n_times))
     for k, freq in enumerate(frequencies):
         print(f"Freq: {freq}")
-        for l, time in enumerate(tfr.times):
+        for l, time in enumerate(times):
             corr, p = pearsonr(peak_speed_next, tfr_data[:, k, l])
             corr_p[0, k, l] = corr
             corr_p[1, k, l] = p
@@ -145,9 +125,8 @@ for i, idx_cond in enumerate([slow_stim_idx, fast_stim_idx, not_stim_idx, stim_i
     sig = corr_p[1, :, :] > 0.05
     corr_sig = corr_p[0, :, :]
     corr_sig[sig] = 0
-    ax = axes[1, 1]
-    im = ax.imshow(corr_sig, aspect="auto", origin="lower", cmap="bwr",
-                        extent=(tmin, tmax, np.min(frequencies), np.max(frequencies)))
+    im = ax2.imshow(corr_sig, aspect="auto", origin="lower", cmap="bwr",
+                        extent=(tmin, tmax, np.min(frequencies), np.max(frequencies)), alpha=0.5)
 
     # Adjust plot
     plt.suptitle(names[i])
@@ -159,7 +138,7 @@ for i, idx_cond in enumerate([slow_stim_idx, fast_stim_idx, not_stim_idx, stim_i
                 format="pdf", bbox_inches="tight", transparent=True)
     plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_{sub}_{names[i]}.png",
                 format="png", bbox_inches="tight", transparent=False)
-plt.show(block=True)
+    plt.show(block=True)
 
 
 

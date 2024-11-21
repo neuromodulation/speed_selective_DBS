@@ -1,2 +1,8 @@
 *.p
 *.fif
+*.csv
+*.xlsx
+*.db
+*.yaml
+*.json
+*.nii

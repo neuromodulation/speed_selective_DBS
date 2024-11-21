@@ -1,0 +1,2 @@
+2024-10-30 17:19:20,164:INFO:py_neuromodulation:nm_IO.py:save_general_dict:293:	_SIDECAR.json saved to decoding_results2\optimization_ECoG_LFP_combined\optimization_ECoG_LFP_combined_SIDECAR.json
+2024-10-30 17:19:20,376:INFO:py_neuromodulation:nm_IO.py:save_features:264:	FEATURES.csv saved to decoding_results2\optimization_ECoG_LFP_combined\optimization_ECoG_LFP_combined_FEATURES.csv

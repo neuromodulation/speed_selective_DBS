@@ -1,0 +1,8 @@
+2024-10-30 17:21:06,457:INFO:py_neuromodulation:nm_IO.py:save_general_dict:293:	_SIDECAR.json saved to decoding_results\optimization_LFP_2\optimization_LFP_2_SIDECAR.json
+2024-10-30 17:21:06,523:INFO:py_neuromodulation:nm_IO.py:save_features:264:	FEATURES.csv saved to decoding_results\optimization_LFP_2\optimization_LFP_2_FEATURES.csv
+2024-10-30 17:21:06,555:INFO:py_neuromodulation:nm_settings.py:save:272:	Settings saved to C:\Users\ICN\Charité - Universitätsmedizin Berlin\Interventional Cognitive Neuromodulation - PROJECT ReinforceVigor\vigor_stim_task\Code\Analysis\Electrophys_Analysis\decoding_results\optimization_LFP_2\optimization_LFP_2_SETTINGS.yaml
+2024-10-30 17:21:06,559:INFO:py_neuromodulation:nm_IO.py:save_nm_channels:253:	nm_channels.csv saved to decoding_results\optimization_LFP_2\optimization_LFP_2_nm_channels.csv
+2024-10-30 17:22:21,835:INFO:py_neuromodulation:nm_IO.py:save_general_dict:293:	_SIDECAR.json saved to decoding_results\optimization_LFP_2\optimization_LFP_2_SIDECAR.json
+2024-10-30 17:22:21,882:INFO:py_neuromodulation:nm_IO.py:save_features:264:	FEATURES.csv saved to decoding_results\optimization_LFP_2\optimization_LFP_2_FEATURES.csv
+2024-10-30 17:22:21,902:INFO:py_neuromodulation:nm_settings.py:save:272:	Settings saved to C:\Users\ICN\Charité - Universitätsmedizin Berlin\Interventional Cognitive Neuromodulation - PROJECT ReinforceVigor\vigor_stim_task\Code\Analysis\Electrophys_Analysis\decoding_results\optimization_LFP_2\optimization_LFP_2_SETTINGS.yaml
+2024-10-30 17:22:21,905:INFO:py_neuromodulation:nm_IO.py:save_nm_channels:253:	nm_channels.csv saved to decoding_results\optimization_LFP_2\optimization_LFP_2_nm_channels.csv

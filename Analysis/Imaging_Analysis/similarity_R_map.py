@@ -6,7 +6,7 @@ import sys
 import seaborn as sb
 from scipy.stats import pearsonr, spearmanr
 
-sys.path.insert(1, "../Code")
+sys.path.insert(1, "../../../Code")
 import utils as u
 import numpy as np
 import scipy.stats
@@ -77,7 +77,7 @@ corr_res, p = scipy.stats.pearsonr(x, y)
 corr_res = corr_res * corr_res
 # corr_res, p = u.permutation_correlation(x, y, n_perm=10000)
 p = np.round(p, 3)
-sb.regplot(x=x, y=y, scatter_kws={"color": "grey", 's': 0.5}, line_kws={"color": 'dimgrey', 'linewidth': 1})
+sb.regplot(x=x, y=y, scatter_kws={"color": "grey", 's': 1.2}, line_kws={"color": 'dimgrey', 'linewidth': 1})
 # Adjust plot
 plt.xticks(fontsize=fontsize - 2)
 plt.yticks(fontsize=fontsize - 2)

@@ -1,12 +1,13 @@
 # Optimize the features using a bayesian hyperparameter search and nested-cross validation
+# Speed up the calculation by parallelizing the computation for all channel combinations
+# Run this on ICN 1
 
 import os
-
+from joblib import Parallel, delayed
 import mne_bids
 import numpy as np
 import mne
 import py_neuromodulation as nm
-from py_neuromodulation import nm_analysis, nm_define_nmchannels, nm_plots, nm_settings, nm_decode
 from bayes_opt import BayesianOptimization
 from sklearn import metrics, model_selection, linear_model
 from sklearn.model_selection import KFold
@@ -19,22 +20,23 @@ from openpyxl import load_workbook
 import sys
 import pickle
 import random
-sys.path.insert(1, "C:/CODE/ac_toolbox/")
+#sys.path.insert(1, "C:/CODE/ac_toolbox/")
 import utils as u
-matplotlib.use('Qt5Agg')
+#matplotlib.use('Qt5Agg')
 import warnings
 warnings.filterwarnings("ignore")
 random.seed(420)
 
 
-# Load the data
-sub = "EL012"
-path = f"..\\..\\..\\Data\\Off\\Neurophys\\Artifact_removal\\{sub}_cleaned.fif"
-raw = mne.io.read_raw_fif(path).load_data()
+# Define parameters
+n_outer = 6
+n_inner = 4
+n_optimization_rounds = 20
+n_iterations_cb = 30
 
-# Define the number of folds in the nested-cross validation
-n_outer = 8
-n_inner = 8
+# Load the data
+path = f"EL012.fif"
+raw = mne.io.read_raw_fif(path).load_data()
 
 sfreq = raw.info["sfreq"]
 target_chan_name = raw.info["ch_names"][-1]
@@ -61,13 +63,11 @@ peaks = np.zeros(raw._data.shape[-1])
 peaks[peaks_idx_ext] = 1
 u.add_new_channel(raw, peaks[np.newaxis, :], "PEAKS", type="misc")
 
-#settings_decoding = ecog_names + lfp_names + ["ECoG_combined", "LFP_combined", "ECoG_LFP_combined"]
-settings_decoding = ecog_names + lfp_names + ["ECoG_LFP_combined", "LFP_combined", "ECoG_combined"]
+# Define all channels and channel combinations to test
+settings_decoding = ["ECoG_combined", "ECoG_LFP_combined", "LFP_combined"] + ecog_names + lfp_names
 
-# Loop over settings
-for s, setting in enumerate(settings_decoding[::-1]):
 
-    print(setting)
+def run_nested_cross_val(setting):
 
     # Save results in excel sheet
     filename = f"decoding_results/feature_model_optimization_{setting}.xlsx"
@@ -89,8 +89,13 @@ for s, setting in enumerate(settings_decoding[::-1]):
         ch_names = ecog_names + ["SPEED_MEAN", "PEAKS"]
         ch_types = ["ecog"] * len(ecog_names) + ["BEH", "BEH"]
 
-    nm_channels = nm_define_nmchannels.set_channels(ch_names=ch_names, ch_types=ch_types,
-                                                    target_keywords=["SPEED_MEAN", "PEAKS"], reference=None)
+    channels = nm.utils.set_channels(
+        ch_names=ch_names,
+        ch_types=ch_types,
+        reference=None,
+        used_types=ch_types[:-2],
+        target_keywords=["SPEED_MEAN", "PEAKS"],
+    )
 
     # Attach the blocks together
     blocks = []
@@ -109,30 +114,31 @@ for s, setting in enumerate(settings_decoding[::-1]):
         test_idx_all.append(test_index)
 
     # Loop over the outer folds
-    for n in range(n_outer):
+    for count, n in enumerate(range(3, n_outer)):
 
         def objective_function(samp_freq, seg_ms, n_stack, learning_rate, depth):
             # Set analysis parameters
             samp_freq = int(samp_freq)
             seg_ms = int(seg_ms)
 
-            # Settings
-            settings = nm_settings.get_default_settings()
-            settings = nm_settings.reset_settings(settings)
-            settings["features"]["fft"] = True
-            settings["features"]["return_raw"] = True
-            settings["sampling_rate_features_hz"] = samp_freq
-            settings["segment_length_features_ms"] = seg_ms
-            settings["fft_settings"]["windowlength_ms"] = seg_ms
-            del settings["frequency_ranges_hz"]["theta"]
-            settings["postprocessing"]["feature_normalization"] = True
-            settings["feature_normalization_settings"]["normalization_time_s"] = 1
-            settings["feature_normalization_settings"]["normalization_method"] = "zscore"
+            # Compute performance on the test set using the optimal parameters
+            settings = nm.NMSettings.get_fast_compute()
+            settings.features.fft = True
+            settings.features.return_raw = True
+            settings.features.raw_hjorth = False
+            settings.sampling_rate_features_hz = samp_freq
+            settings.segment_length_features_ms = seg_ms
+            settings.fft_settings.windowlength_ms = seg_ms
+            del settings.frequency_ranges_hz["theta"]
+            settings.postprocessing.feature_normalization = True
+            settings.feature_normalization_settings.normalization_time_s = 1
+            settings.feature_normalization_settings.normalization_method = "zscore"
+            settings.preprocessing = settings.preprocessing[:2]
 
             # Compute features
             stream = nm.Stream(
                 settings=settings,
-                nm_channels=nm_channels,
+                channels=channels,
                 verbose=False,
                 sfreq=sfreq,
                 line_noise=50
@@ -140,11 +146,10 @@ for s, setting in enumerate(settings_decoding[::-1]):
 
             data = blocks_all[:, train_idx_all[n]]
 
-            features = stream.run(data=data, out_path_root="..\\..\\..\\Data\\Off\\processed_data\\",
-                                  folder_name=f"feature_optimization")
-            feature_reader = nm_analysis.FeatureReader(
-                feature_dir="..\\..\\..\\Data\\Off\\processed_data\\",
-                feature_file="feature_optimization",
+            stream.run(data=data, out_dir=f"decoding_results/", experiment_name=f"optimization_{setting}")
+            feature_reader = nm.analysis.FeatureReader(
+                feature_dir=f"decoding_results\\",
+                feature_file=f"optimization_{setting}"
             )
 
             # Set the label
@@ -152,13 +157,13 @@ for s, setting in enumerate(settings_decoding[::-1]):
             feature_reader.label = feature_reader.feature_arr[feature_reader.label_name]
 
             # Setup the model and train
-            model = CatBoostRegressor(iterations=50,
+            model = CatBoostRegressor(iterations=n_iterations_cb,
                                       depth=int(depth),
                                       learning_rate=learning_rate
                                       )
 
             try:
-                feature_reader.decoder = nm_decode.Decoder(
+                feature_reader.decoder = nm.analysis.Decoder(
                     features=feature_reader.feature_arr,
                     label=feature_reader.label,
                     label_name=feature_reader.label_name,
@@ -179,6 +184,12 @@ for s, setting in enumerate(settings_decoding[::-1]):
                 df_per = feature_reader.get_dataframe_performances(performances)
                 perf = np.array(df_per["performance_test"])[-1]
 
+                # Save decoding model
+                #best_decoder_path = f"decoding_results/model_{setting}_fold_{n}_{samp_freq}_{seg_ms}_{n_stack}_{learning_rate}_{depth}.p"
+
+                #with open(best_decoder_path, "wb") as output:
+                #    pickle.dump(feature_reader.decoder, output)
+
             except Exception as e:
                     perf = 0
                     print(e)
@@ -191,10 +202,10 @@ for s, setting in enumerate(settings_decoding[::-1]):
             try:
                 wb = load_workbook(filename)
                 try:
-                    ws = wb.worksheets[n]
+                    ws = wb.worksheets[count]
                 except:
                     wb.create_sheet(f"Fold {n}")
-                    ws = wb.worksheets[n]
+                    ws = wb.worksheets[count]
                     ws.append(headers_row)
             except FileNotFoundError:
                 wb = Workbook()
@@ -216,31 +227,30 @@ for s, setting in enumerate(settings_decoding[::-1]):
         )
 
         optimizer.maximize(
-            init_points=20,
-            n_iter=1,
+            init_points=n_optimization_rounds,
+            n_iter=3,
         )
 
         # Get the optimal parameters yielding the highest performance
-        df = pd.read_excel(filename, sheet_name=f"Fold {n}")
+        df = pd.read_excel(filename, sheet_name=f"Fold {count}")
         samp_freq, seg_ms, n_stack, depth, learning_rate, _ = df.loc[df['all'].idxmax()]
 
         # Compute performance on the test set using the optimal parameters
-        settings = nm_settings.get_default_settings()
-        settings = nm_settings.reset_settings(settings)
-        settings["features"]["fft"] = True
-        settings["features"]["return_raw"] = True
-        settings["sampling_rate_features_hz"] = samp_freq
-        settings["segment_length_features_ms"] = seg_ms
-        settings["fft_settings"]["windowlength_ms"] = seg_ms
-        del settings["frequency_ranges_hz"]["theta"]
-        settings["postprocessing"]["feature_normalization"] = True
-        settings["feature_normalization_settings"]["normalization_time_s"] = 1
-        settings["feature_normalization_settings"]["normalization_method"] = "zscore"
+        settings = nm.NMSettings.get_fast_compute()
+        settings.features.fft = True
+        settings.features.return_raw= True
+        settings.sampling_rate_features_hz = samp_freq
+        settings.segment_length_features_ms = seg_ms
+        settings.fft_settings.windowlength_ms = seg_ms
+        del settings.frequency_ranges_hz.theta
+        settings.postprocessing.feature_normalization = True
+        settings.feature_normalization_settings.normalization_time_s = 1
+        settings.feature_normalization_settings.normalization_method = "zscore"
 
         # Compute features
         stream = nm.Stream(
             settings=settings,
-            nm_channels=nm_channels,
+            channels=channels,
             verbose=False,
             sfreq=sfreq,
             line_noise=50
@@ -260,7 +270,7 @@ for s, setting in enumerate(settings_decoding[::-1]):
         X_test_long, y_test = u.append_previous_n_samples(X=X_test,y=y_test, n=int(n_stack))
 
         # Setup the model and train
-        model = CatBoostRegressor(iterations=50,
+        model = CatBoostRegressor(iterations=n_iterations_cb,
                                   depth=int(depth),
                                   learning_rate=learning_rate
                                   )
@@ -277,6 +287,16 @@ for s, setting in enumerate(settings_decoding[::-1]):
 
         # Save decoding performance in excel sheet
         wb = load_workbook(filename)
-        ws = wb.worksheets[n]
+        ws = wb.worksheets[count]
         ws.append(row)
         wb.save(filename)
+
+
+if __name__ == "__main__":
+    #run_nested_cross_val(settings_decoding[0])
+    #Parallel(n_jobs=len(settings_decoding))(delayed(run_nested_cross_val)(setting) for setting in settings_decoding)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Fold"
+    ws.append([1, 2, 3])
+    wb.save("test.xlsx")

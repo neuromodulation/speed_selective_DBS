@@ -6,7 +6,7 @@ import os
 import sys
 import seaborn as sb
 from scipy.stats import pearsonr
-sys.path.insert(1, "../Code")
+sys.path.insert(1, "../../../Code")
 import utils as u
 import numpy as np
 import mat73
@@ -75,7 +75,7 @@ for t, target_name in enumerate(target_names):
     #corr_res, p = u.permutation_correlation(y[:len(pred_outcome)], pred_outcome, n_perm=10000)
     p = np.round(p, 3)
     sb.regplot(x=y[:len(pred_outcome)], y=pred_outcome,
-         scatter_kws={"color": "grey", 's': 0.5}, line_kws={"color": colors[t], 'linewidth':1})
+         scatter_kws={"color": "grey", 's': 1.2}, line_kws={"color": colors[t], 'linewidth':1})
     # Adjust plot
     fontsize=7
     plt.xticks(fontsize=fontsize-2)

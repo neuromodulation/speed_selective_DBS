@@ -4,7 +4,7 @@
 # Import useful libraries
 import os
 import sys
-sys.path.insert(1, "../Code")
+sys.path.insert(1, "../../../Code")
 import utils as u
 import numpy as np
 from scipy.stats import percentileofscore
@@ -23,11 +23,11 @@ n_cutoff = 5
 fontsize = 7.5
 
 # Prepare plotting
-colors = ["#00863b", "#3b0086", "dimgrey"]
-colors_op = ["#b2dac4", "#b099ce", "grey"]
-labels = ["Slow", "Fast", "Healthy"]
+colors = ["#3b0086", "#00863b", "dimgrey"]
+colors_op = ["#b099ce", "#b2dac4", "grey"]
+labels = ["Fast", "Slow", "Healthy"]
 titles = ["Stimulation", "Recovery"]
-f, axes = plt.subplots(2, 4, figsize=(2.5, 2))
+f, axes = plt.subplots(2, 4, figsize=(2.5, 2.5))
 
 # Trace over time
 meds = ["Off", "Off", "Healthy"]
@@ -60,8 +60,8 @@ for i, med in enumerate(meds):
         y_all = np.nanmean(feature_smooth, axis=(0, 1))
         std_all = np.nanstd(feature_smooth, axis=(0, 1))
     else:
-        y_all = np.nanmean(feature_smooth, axis=0)[i, :]
-        std_all = np.nanstd(feature_smooth, axis=0)[i, :]
+        y_all = np.nanmean(feature_smooth, axis=0)[[1,0][i], :]
+        std_all = np.nanstd(feature_smooth, axis=0)[[1,0][i], :]
 
     # Plot each block separately
     for block in range(2):
@@ -94,8 +94,8 @@ for i, med in enumerate(meds):
         else:
             ax.spines[['left', 'top', 'right']].set_visible(False)
             ax.set_yticks([])
-        ymax = 40
-        ymin = -35
+        ymax = 30
+        ymin = -30
         ax.set_ylim([ymin, ymax])
         if i == 0:
             ax.set_title(titles[block], fontsize=fontsize)
@@ -158,15 +158,14 @@ for i in range(2):
         bar_pos = [-(box_width * 1.5), (box_width * 1.5)]
 
         # Plot
-        feature_av_all = [feature_av[:, cond], feature_av_control]
+        feature_av_all = [feature_av[:, [1,0][cond]], feature_av_control]
 
         if cond == 0:
-            colors = ["#00863b", "dimgrey"]
-            colors_op = ["#b2dac4", "grey"]
-        else:
             colors = ["#3b0086", "dimgrey"]
             colors_op = ["#b099ce", "grey"]
-
+        else:
+            colors = ["#00863b", "dimgrey"]
+            colors_op = ["#b2dac4", "grey"]
         for j, feat in enumerate(feature_av_all):
 
             ax.boxplot(x=feat,
@@ -182,6 +181,9 @@ for i in range(2):
                             meanprops=dict(color=colors[j], linewidth=0, linestyle="solid"),
                         flierprops=dict(marker='o', markerfacecolor=colors_op[j], markersize=0.5, markeredgecolor='none')
                              )
+            # Add the individual subject points
+            for dat in feat:
+                ax.plot(bar_pos[j], dat, marker='o', markersize=0.5, color=colors[j])
 
             # Add statistics
         #z, p = scipy.stats.ttest_ind(feature_av_all[0], feature_av_all[1])

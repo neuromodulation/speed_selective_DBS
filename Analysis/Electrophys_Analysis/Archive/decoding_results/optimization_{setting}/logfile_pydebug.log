@@ -1,0 +1,8 @@
+2024-10-31 18:03:44,129:INFO:py_neuromodulation:io.py:save_general_dict:252:	sub_SIDECAR.json saved to decoding_results\optimization_{setting}\sub
+2024-10-31 18:03:44,261:INFO:py_neuromodulation:io.py:save_features:224:	sub_FEATURES.csv saved to decoding_results\optimization_{setting}\sub
+2024-10-31 18:03:44,293:INFO:py_neuromodulation:settings.py:save:275:	Settings saved to C:\Users\ICN\Charité - Universitätsmedizin Berlin\Interventional Cognitive Neuromodulation - PROJECT ReinforceVigor\vigor_stim_task\Code\Analysis\Electrophys_Analysis\decoding_results\optimization_{setting}\sub\sub_SETTINGS.yaml
+2024-10-31 18:03:44,301:INFO:py_neuromodulation:io.py:save_channels:213:	sub_channels.csv saved to decoding_results\optimization_{setting}\sub
+2024-10-31 18:09:03,370:INFO:py_neuromodulation:io.py:save_general_dict:252:	optimization_ECoG_combined_SIDECAR.json saved to decoding_results\optimization_ECoG_combined
+2024-10-31 18:09:03,414:INFO:py_neuromodulation:io.py:save_features:224:	optimization_ECoG_combined_FEATURES.csv saved to decoding_results\optimization_ECoG_combined
+2024-10-31 18:09:03,423:INFO:py_neuromodulation:settings.py:save:275:	Settings saved to C:\Users\ICN\Charité - Universitätsmedizin Berlin\Interventional Cognitive Neuromodulation - PROJECT ReinforceVigor\vigor_stim_task\Code\Analysis\Electrophys_Analysis\decoding_results\optimization_ECoG_combined\optimization_ECoG_combined_SETTINGS.yaml
+2024-10-31 18:09:03,425:INFO:py_neuromodulation:io.py:save_channels:213:	optimization_ECoG_combined_channels.csv saved to decoding_results\optimization_ECoG_combined

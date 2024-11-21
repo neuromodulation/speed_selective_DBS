@@ -4,11 +4,11 @@
 # Import useful libraries
 import os
 import sys
-sys.path.insert(1, "../Code")
+sys.path.insert(1, "../../../Code")
 import utils as u
 import numpy as np
 from scipy.stats import percentileofscore
-import scipy.stats
+from scipy.stats import ttest_1samp, permutation_test, wilcoxon
 import matplotlib.pyplot as plt
 import matplotlib
 import random
@@ -112,6 +112,9 @@ for i in range(1, n):
                          flierprops=dict(marker='o', markerfacecolor="dimgray", markersize=0,
                                          markeredgecolor='none')
                          )
+        # Test difference from 0 (one-sample ttest)
+        t, p = ttest_1samp(res_tmp[:, l, i], 0)
+        print(p)
     # Add the individual lines
     for dat in res_tmp[:, :, i]:
         plt.plot(bar_pos[0], dat[0], marker='o', markersize=0.5, color=colors[0])
@@ -121,7 +124,7 @@ for i in range(1, n):
 
     # Add statistics
     #z, p = scipy.stats.wilcoxon(res_tmp[:, i, 0], res_tmp[:, i, 1])
-    res_perm = scipy.stats.permutation_test(data=(res_tmp[:, 0, i], res_tmp[:, 1, i]),
+    res_perm = permutation_test(data=(res_tmp[:, 0, i], res_tmp[:, 1, i]),
                                        statistic=u.diff_mean_statistic,
                                        n_resamples=10000, permutation_type="samples")
     p = res_perm.pvalue

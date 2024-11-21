@@ -9,59 +9,48 @@ import mne
 import os
 import sys
 import random
-import pandas as pd
-from sklearn import metrics, model_selection, linear_model
-import py_neuromodulation as nm
-from catboost import CatBoostRegressor, Pool
-from xgboost import XGBClassifier
-from scipy.stats import zscore
-from py_neuromodulation import (
-    nm_analysis,
-    nm_decode,
-    nm_define_nmchannels,
-    nm_IO,
-    nm_plots,
-    nm_settings,
-)
 import pickle
 from scipy.stats import pearsonr
 import seaborn as sb
-sys.path.insert(1, "C:/CODE/ac_toolbox/")
+sys.path.insert(1, "../../../Code")
 import utils as u
 import matplotlib
 matplotlib.use('Qt5Agg')
 random.seed(420)
 
 # Load the model
-#model_path = f"..\..\..\Data\Off\processed_data\{samp_freq}_{seg_ms}\{samp_freq}_{seg_ms}_LM_ML_RES.p"
-model_path = "decoding_results/model_LFP_combined_fold_3_31_361.p"
-cond = "LFP"
+setting = "LFP_combined"
+model_path = f"optimization_{setting}_vis/optimization_{setting}_vis_LM_ML_RES.p"
 file = open(model_path,'rb')
 decoder = pickle.load(file)
 
 # Plot the predicted speed
 channel = "all_ch_combined"
-i = 2
-y_test = decoder.all_ch_results["y_test"][i]
-y_test_pr = decoder.all_ch_results["y_test_pr"][i]
+for i in range(0, 7):
+    y_test = decoder.all_ch_results["y_test"][i]
+    y_test_pr = decoder.all_ch_results["y_test_pr"][i]
 
-# Smooth the prediction
-y_test_pr = np.convolve(y_test_pr, np.ones(6) / 6, mode='same')
+    # Smooth the prediction
+    #y_test_pr = np.convolve(y_test_pr, np.ones(3) / 3, mode='same')
 
-fig, ax = plt.subplots()  # figsize=(1.3, 1.3))
-ax.plot(np.array(y_test)[225:400], color="black", label="speed")
-ax.plot(y_test_pr[225:400], color="red", label="predicted speed")
-ax.legend()
+    fig, ax = plt.subplots()  # figsize=(1.3, 1.3))
+    if "ECoG_combined":
+        ax.plot(np.array(y_test)[2060:2240], color="black", label="speed")
+        ax.plot(y_test_pr[2060:2240], color="red", label="predicted speed")
+    elif "LFP_combined":
+        ax.plot(np.array(y_test)[990:1170], color="black", label="speed")
+        ax.plot(y_test_pr[990:1170], color="red", label="predicted speed")
+    ax.legend()
 
-# Save
-plot_name = os.path.basename(__file__).split(".")[0]
-dir_name = os.path.dirname(os.path.realpath(__file__)).split("\\")[-1]
-plt.savefig(
-        f"../../../Figures/{dir_name}/{plot_name}_{cond}.pdf",
-        format="pdf", bbox_inches="tight", transparent=True)
-plt.savefig(
-    f"../../../Figures/{dir_name}/{plot_name}_{cond}.png",
-    format="png", bbox_inches="tight", transparent=False)
+    # Save
+    plot_name = os.path.basename(__file__).split(".")[0]
+    dir_name = os.path.dirname(os.path.realpath(__file__)).split("\\")[-1]
+    plt.savefig(
+            f"../../../Figures/{dir_name}/{plot_name}_{setting}.pdf",
+            format="pdf", bbox_inches="tight", transparent=True)
+    plt.savefig(
+        f"../../../Figures/{dir_name}/{plot_name}_{setting}.png",
+        format="png", bbox_inches="tight", transparent=False)
 
 plt.show()
 

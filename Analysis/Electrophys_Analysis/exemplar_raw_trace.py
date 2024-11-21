@@ -15,31 +15,16 @@ warnings.filterwarnings("ignore")
 random.seed(420)
 
 # Load the data
-sub = "EL012"
-path = f"..\\..\\..\\Data\\Off\\Neurophys\\Artifact_removal\\{sub}_cleaned.fif"
+path = f"EL012_ECoG_CAR_LFP_BIP.fif"
 raw = mne.io.read_raw_fif(path).load_data()
-raw.filter(1, None)
+raw.filter(2, None)
 
 sfreq = raw.info["sfreq"]
 target_chan_name = raw.info["ch_names"][-1]
 events = mne.events_from_annotations(raw)[0]
 
-# Add ECoG channels with common average reference
-ecog_names = ["ECOG_R_1_CAR", "ECOG_R_2_CAR", "ECOG_R_3_CAR"]
-og_chan_names = ["ECOG_R_01_SMC_AT", "ECOG_R_02_SMC_AT", "ECOG_R_03_SMC_AT"]
-for i, chan in enumerate(og_chan_names):
-    new_ch = raw.get_data(chan) - raw.get_data(og_chan_names).mean(axis=0)
-    u.add_new_channel(raw, new_ch, ecog_names[i], type="ecog")
-
-# Add the LFP channels
-lfp_names = ["LFP_1", "LFP_2"]
-og_chan_names = ["LFP_R_01_STN_MT", "LFP_R_08_STN_MT"]
-for i, chan in enumerate(og_chan_names):
-    new_ch = raw.get_data(["LFP_R_02_STN_MT", "LFP_R_03_STN_MT", "LFP_R_04_STN_MT"]).sum(axis=0) - raw.get_data(chan)
-    u.add_new_channel(raw, new_ch, lfp_names[i], type="ecog")
-
 # Get the raw data for the new channels
-channel_names = ecog_names+lfp_names
+channel_names = raw.info["ch_names"][-7:]
 data = raw.get_data(channel_names)
 speed = raw.get_data(["SPEED_MEAN"]).flatten()
 speed = np.convolve(speed, np.ones(100)/100, mode='same')
@@ -51,8 +36,8 @@ peaks_idx = events[np.where((events[:, 2] == 3)), 0].flatten()
 fontsize=6
 tmin = int(0.5 * sfreq)
 tmax = int(0.6 * sfreq)
-names = ["ECoG 1", "ECoG 2", "ECoG 3", "LFP 1", "LFP 2"]
-for idx in peaks_idx[8:]:
+names = ["ECoG 1", "ECoG 2", "ECoG 3", "ECoG 4", "ECoG 5", "LFP 1", "LFP 2"]
+for idx in peaks_idx[11:]:
 
     data_tmp = data[:, idx-tmin:idx+tmax]
     speed_tmp = speed[idx-tmin:idx+tmax]
