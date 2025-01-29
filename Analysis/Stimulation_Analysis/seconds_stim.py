@@ -40,9 +40,9 @@ time_sample = np.load(f"../../../Data/{med}/processed_data/first_time_sample.npy
 # Select only stimulation blocks
 time_sample = time_sample[:, :, 0, :]
 av_stim_sec = [9.44, 7.56]
-av_dur = (np.max(time_sample, axis=-1) - np.min(time_sample, axis=-1)).flatten() / 60
-stim_sec = stim_sec.flatten() / 60
-for i, av in enumerate([stim_sec, av_dur]):
+av_dur = (np.max(time_sample, axis=-1) - np.min(time_sample, axis=-1)).flatten()
+stim_sec = stim_sec.flatten()
+for i, av in enumerate([stim_sec, av_dur][:1]):
     print(np.round(np.mean(av), 2))
     print(np.round(np.std(av), 2))
     # Plot axis on both sides
@@ -59,11 +59,13 @@ for i, av in enumerate([stim_sec, av_dur]):
                 )
     # Add the individual points
     ymin, ymax = ax.get_ylim()
-    ax.scatter(np.repeat(bar_pos[i], len(av)), av, s=1, c="dimgray", marker='o', zorder=2)
+    # Jitter the points
+    jitter = np.random.uniform(bar_pos[i]-0.03, bar_pos[i]+0.03, size=len(av))
+    ax.scatter(jitter, av, s=2, c="gray", marker='o', zorder=2)
 # Adjust plot
 ax.set_ylim([ymin, ymax])
 ax.yaxis.set_tick_params(labelsize=fontsize)
-ax.set_xticklabels(labels, fontsize=fontsize)
+ax.set_xticklabels(labels[:1], fontsize=fontsize)
 ax.set_ylabel("Time [min]", fontsize=fontsize)
 ax.spines[["top", "right"]].set_visible(False)
 plt.subplots_adjust(bottom=0.15, left=0.15, right=0.85, wspace=0.4)

@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 
 # Set feature to analyze
-feature_name = "peak_speed"
+feature_name = "mean_speed"
 med = "Off"
 
 # Load matrix containing the feature values and the stimulated trials
@@ -43,6 +43,7 @@ for i, j in enumerate([1, 0]):
     # Get the average feature of the stimulated trials
     for k in range(stim.shape[0]):
         feature_stim[k, j] = np.nanmean([percentileofscore(feature[k, j, :], x, nan_policy='omit') for x in feature[k, j, :][stim[k, j, :] == 1]])
+        feature_stim[k, j] = np.nanmean(feature[k, j, stim[k, j, :] == 1])
 
     # Plot axis on both sides
     bp = ax.boxplot(x=feature_stim[:, j],
@@ -63,7 +64,7 @@ for dat in feature_stim:
     # Add line connecting the points
     ax.plot(bar_pos[::-1], dat, color="black", linewidth=0.4, alpha=0.3)
 # Add statistics
-"""r = scipy.stats.permutation_test(data=(feature_stim[:, 0], feature_stim[:, 1]),
+r = scipy.stats.permutation_test(data=(feature_stim[:, 0], feature_stim[:, 1]),
                                  statistic=u.diff_mean_statistic, alternative='two-sided',
                                  n_resamples=100000, permutation_type="samples")
 p = r.pvalue
@@ -72,7 +73,7 @@ ymin, ymax = ax.get_ylim()
 ax.plot(bar_pos, [ymax, ymax], color="black", linewidth=1)
 ax.text(0, ymax, text, ha="center", va="bottom", fontsize=16)
 print(f"min {np.round(min(feature_stim[:, 0]), 2)}, max {np.round(max(feature_stim[:, 0]), 2)}, min {np.round(min(feature_stim[:, 1]), 2)}, max {np.round(max(feature_stim[:, 1]), 2)}")
-"""
+
 
 # Adjust plot
 ax.set_xticks(bar_pos, ["Fast", "Slow"], fontsize=fontsize)

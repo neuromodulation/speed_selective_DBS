@@ -8,7 +8,7 @@ sys.path.insert(1, "../../../Code")
 import utils as u
 import numpy as np
 from scipy.stats import percentileofscore
-from scipy.stats import ttest_1samp, permutation_test, wilcoxon
+from scipy.stats import ttest_1samp, permutation_test, wilcoxon, shapiro
 import matplotlib.pyplot as plt
 import matplotlib
 import random
@@ -112,9 +112,13 @@ for i in range(1, n):
                          flierprops=dict(marker='o', markerfacecolor="dimgray", markersize=0,
                                          markeredgecolor='none')
                          )
-        # Test difference from 0 (one-sample ttest)
-        t, p = ttest_1samp(res_tmp[:, l, i], 0)
-        print(p)
+        # Test difference from 0
+        observed_mean = np.mean(res_tmp[:, l, i])
+        num_permutations = 100000
+        permuted_means = u.generate_permutations(res_tmp[:, l, i], num_permutations)
+        p_value = np.mean(np.abs(permuted_means) >= np.abs(observed_mean))
+        print(p_value)
+
     # Add the individual lines
     for dat in res_tmp[:, :, i]:
         plt.plot(bar_pos[0], dat[0], marker='o', markersize=0.5, color=colors[0])
@@ -126,7 +130,7 @@ for i in range(1, n):
     #z, p = scipy.stats.wilcoxon(res_tmp[:, i, 0], res_tmp[:, i, 1])
     res_perm = permutation_test(data=(res_tmp[:, 0, i], res_tmp[:, 1, i]),
                                        statistic=u.diff_mean_statistic,
-                                       n_resamples=10000, permutation_type="samples")
+                                       n_resamples=100000, permutation_type="samples")
     p = res_perm.pvalue
     text = u.get_sig_text(p)
     ymin, ymax = plt.ylim()

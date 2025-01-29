@@ -71,7 +71,7 @@ for i in range(n_datasets):
         feature_name_plot = feature_name.replace("_", " ")
         plt.ylabel(f"Raw {feature_name_plot} ", fontsize=13)
         if j == 1: plt.xlabel("Movement number", fontsize=13)
-        plt.ylim([1000, 4000])
+        #plt.ylim([1000, 4000])
         plt.axvline(n_trials-n_cutoff)
         u.despine()
 

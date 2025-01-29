@@ -1,5 +1,3 @@
-# Results Figure 4: Compare power between stimulated and not stimulated movements
-# Line plot showing band power over time
 
 import os
 import mne_bids
@@ -15,7 +13,6 @@ import utils as u
 import matplotlib
 matplotlib.use('Qt5Agg')
 
-
 # Set parameters
 baseline = (-0.4, -0.1)
 mode = "zscore"
@@ -23,7 +20,7 @@ freq_min = 20
 freq_max = 35
 frequencies = np.arange(freq_min, freq_max, 1)
 tmin = -0.4
-tmax = 1
+tmax = 0.8
 fontsize = 6
 
 # Load the data
@@ -146,13 +143,12 @@ plt.plot(data.mean(axis=(0,1,2)).flatten())
 plt.show()"""
 
 
-
 # Prepare plotting
 labels = ["Stim", "No Stim"]
 colors = np.array(["#860008", "darkgrey"])
 colors_op = np.array(["#860008", "darkgrey"])
 line_style = ["-", "-"]
-fig, axes = plt.subplots(4, 1, figsize=(3, 1.5), height_ratios=[1, 0.5, 0.5, 3])
+fig, axes = plt.subplots(4, 1, figsize=(3, 2.5), height_ratios=[0.5, 0.5, 2, 2])
 times = tfr.times
 
 # Loop over stim/no stim
@@ -160,19 +156,19 @@ for i, idx in enumerate([stim_idx, no_stim_idx]):
 
     # Add raw trace of exemplar stimulated and not stimulated movement
     raw_no_stim = np.mean(epochs[idx[0]].get_data(target_chan_name, tmax=tmax, tmin=tmin), axis=0).squeeze()
-    axes[[2, 1][i]].plot(times[:len(raw_no_stim)], raw_no_stim, color=colors[i], linewidth=1, alpha=0.8, linestyle=line_style[i])
+    axes[[1, 0][i]].plot(times[:len(raw_no_stim)], raw_no_stim, color=colors[i], linewidth=1, alpha=0.8, linestyle=line_style[i])
 
     # Add speed
     mean_behav = np.mean(epochs[idx].get_data(["SPEED_MEAN"], tmax=tmax, tmin=tmin), axis=0).squeeze()
     std_behav = np.std(epochs[idx].get_data(["SPEED_MEAN"], tmax=tmax, tmin=tmin), axis=0).squeeze()
-    ax = axes[0]
+    ax = axes[3]
     ax.plot(times[:len(mean_behav)], mean_behav, color=colors[i], linewidth=1, alpha=0.8, linestyle=line_style[i])
     ax.fill_between(times[:len(mean_behav)], mean_behav - std_behav, mean_behav + std_behav, color=colors[i], alpha=0.1)
 
     # Add power
     mean_power = np.mean(tfr_interp[idx].get_data(picks=target_chan_name), axis=(0, 1, 2)) #* 100
     std_power = scipy.stats.sem(tfr_interp[idx].get_data(picks=target_chan_name), axis=(0, 1, 2)) #* 100
-    ax = axes[3]
+    ax = axes[2]
     ax.plot(times, mean_power, linestyle=line_style[i], label=labels[i], color=colors[i], linewidth=1, alpha=0.8)
     ax.fill_between(times, mean_power - std_power, mean_power + std_power, color=colors_op[i], alpha=0.1)
 
@@ -206,7 +202,7 @@ ax.axvline(0, color="black", linewidth=1)
 ax.set_ylabel("Speed", fontsize=fontsize, rotation=0, ha="right")
 ax.set_title(f"{target_chan_name}", fontsize=fontsize)
 
-ax = axes[3]
+ax = axes[2]
 ymin, ymax = ax.get_ylim()
 ax.fill_between(baseline, ymin, ymax, color="grey", alpha=0.3)
 ax.fill_between(art_window_1, ymin, ymax, color="white", alpha=0.5, hatch='/', zorder=2)
@@ -223,6 +219,14 @@ ax.xaxis.set_tick_params(labelsize=fontsize)
 ax.yaxis.set_tick_params(labelsize=fontsize)
 ax.legend(loc="lower left")
 ax.spines[["right", "top"]].set_visible(False)
+
+ax = axes[3]
+ax.set_ylabel("Average speed", fontsize=fontsize, rotation=0, ha="right")
+ax.set_xlabel("Time aligned to peak speed [sec]", fontsize=fontsize)
+ax.xaxis.set_tick_params(labelsize=fontsize)
+ax.yaxis.set_tick_params(labelsize=fontsize)
+ax.spines[["right", "top"]].set_visible(False)
+
 plt.subplots_adjust(hspace=0.1, left=0.25)
 
 # Save
@@ -237,15 +241,15 @@ plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_{target_chan_name}_{freq_m
 
 # Add statistics (stim vs no_stim boxplot)
 sig_window1 = [art_window_1[1], art_window_2[0]]
-sig_window2 = [art_window_2[1], tmax]
+sig_window2 = [art_window_2[1], 0.8]
 for i, sig_window in enumerate([sig_window1, sig_window2]):
     fig, ax = plt.subplots(1, 1, figsize=(1,1))
     bar_pos = [0, 1]
     box_width = 0.5
     power_all = []
     for j, idx in enumerate([stim_idx, no_stim_idx]):
-        power = np.nanmean(tfr[idx].get_data(picks=target_chan_name, tmin=sig_window[0], tmax=sig_window[1]),
-                                axis=(1, 2, 3))
+        power = np.nanmean(epochs[idx].get_data(picks=["SPEED_MEAN"], tmin=sig_window[0], tmax=sig_window[1]),
+                                axis=(1, 2))
         jitter = np.random.uniform(-0.05, 0.05, size=len(power))
         bp = ax.boxplot(x=power,
                         positions=[bar_pos[j]],
@@ -268,6 +272,7 @@ for i, sig_window in enumerate([sig_window1, sig_window2]):
                                        statistic=u.diff_mean_statistic,
                                        n_resamples=100000, permutation_type="independent")
     text = u.get_sig_text(res.pvalue)
+    print(res.pvalue)
     cap_length = (ymax - ymin)/30
     ymax += cap_length
     ax.plot([bar_pos[0], bar_pos[0], bar_pos[1], bar_pos[1]], [ymax - cap_length, ymax, ymax, ymax - cap_length], color="black",
@@ -276,7 +281,7 @@ for i, sig_window in enumerate([sig_window1, sig_window2]):
 
     # Adjust plot
     ax.set_ylim([ymin, ymax+cap_length*3])
-    ax.set_ylabel("$\\beta$ [zscore]", fontsize=fontsize)
+    ax.set_ylabel("Average speed", fontsize=fontsize)
     ax.set_xticks(ticks=[0, 1], labels=labels, fontsize=fontsize)
     ax.yaxis.set_tick_params(labelsize=fontsize - 1)
     ax.set_title(f"{np.round(sig_window[0], 2)}-{np.round(sig_window[1], 2)} sec", fontsize=fontsize)

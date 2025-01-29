@@ -50,17 +50,14 @@ colors = ["#B3F2DD", "#f2b3c8"]
 
 for t, target_name in enumerate(target_names):
 
-    # Get the connectivity values for the cortico-basal ganglia pathway
+    # Get the connectivity values for the target of interest
     idx_targets = np.array([np.where(targets == target)[0][0] for target in [target_name]])
     conn_mat = conn_mat_original[idx_targets, n_targets:]
-
-    # Compute correlations between targets
-    corr_mat = np.corrcoef(conn_mat, rowvar=True)
 
     # Fit a linear regression between the correlation coefficients of the remaining subjects and the outcome measure
     pred_outcome = np.zeros(len(y))
     for i in range(len(y)):
-          idx_train = np.delete(np.arange(len(y)), i)
+          idx_train = np.arange(len(y))#np.delete(np.arange(len(y)), i)
           x_train = conn_mat[:, idx_train]
           y_train = y[idx_train]
           # Create a linear regression model
@@ -82,7 +79,9 @@ for t, target_name in enumerate(target_names):
     plt.yticks(fontsize=fontsize-2)
     plt.xlabel("Empirical effect", fontsize=fontsize, labelpad=0.5)
     plt.ylabel("Estimated effect", fontsize=fontsize, labelpad=0.5)
-    plt.title(f"R² = {np.round(corr_res*corr_res, 2)} p = {p}", fontsize=fontsize-1, pad=0.5)
+    #plt.title(f"R² = {np.round(corr_res*corr_res, 2)} p = {p}", fontsize=fontsize-1, pad=0.5)
+    print(p)
+    plt.title(f"R² = {np.round(corr_res*corr_res, 2)}", fontsize=fontsize-1, pad=0.5)
     u.despine()
 
     # Save figure

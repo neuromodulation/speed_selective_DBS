@@ -3,7 +3,7 @@
 # Import useful libraries
 import os
 import sys
-sys.path.append('../Code')
+sys.path.append('../../../Code')
 import utils as u
 import numpy as np
 import scipy.stats
@@ -13,7 +13,7 @@ matplotlib.use('TkAgg')
 
 
 # define medication state
-med = "Off"
+med = "Of"
 fig = plt.figure(figsize=(5.5, 5.5))
 
 # Load matrix containing 0/1 indicating which trial was stimulated

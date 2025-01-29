@@ -192,10 +192,18 @@ def permutation_correlation(x, y, n_perm=10000, method='spearman'):
     return observed_corr, p_value
 
 
-def diff_mean_statistic(x, y):
-    return np.mean(x) - np.mean(y)
+def diff_mean_statistic(x, y, axis):
+    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
 
-#def paired_two_sided_permutation(x, y, n_permutation=100000):
+
+# Generate permuted samples by flipping signs
+def generate_permutations(data, num_permutations=10000):
+    permuted_means = []
+    for _ in range(num_permutations):
+        flipped_data = data * np.random.choice([-1, 1], size=len(data), replace=True)
+        permuted_means.append(np.mean(flipped_data))
+    return np.array(permuted_means)
+
 
 def create_sequences(data, label, n_steps):
     X = []

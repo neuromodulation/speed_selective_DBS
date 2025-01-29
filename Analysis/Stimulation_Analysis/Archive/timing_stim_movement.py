@@ -18,13 +18,13 @@ med = "Off"
 fig = plt.figure(figsize=(8.5, 3))
 
 # Load matrix containing time of stimulation and time of peak for each movement
-stim_time = np.load(f"../../../Data/{med}/processed_data/stim_time.npy")
-peak_speed_time = np.load(f"../../../Data/{med}/processed_data/peak_speed_time.npy")
-move_offset_time = np.load(f"../../../Data/{med}/processed_data/move_offset_time.npy")
-move_onset_time = np.load(f"../../../Data/{med}/processed_data/move_onset_time.npy")
+stim_time = np.load(f"../../../../Data/{med}/processed_data/stim_time.npy")
+peak_speed_time = np.load(f"../../../../Data/{med}/processed_data/peak_speed_time.npy")
+move_offset_time = np.load(f"../../../../Data/{med}/processed_data/move_offset_time.npy")
+move_onset_time = np.load(f"../../../../Data/{med}/processed_data/move_onset_time.npy")
 
 # Load matrix containing the mean speed around and aligned to the peak
-speed_around_peak = np.load(f"../../../Data/{med}/processed_data/speed_around_peak.npy")
+speed_around_peak = np.load(f"../../../../Data/{med}/processed_data/speed_around_peak.npy")
 
 # Select only stimulation blocks
 stim_time = stim_time[:, :, 0, :]
@@ -94,8 +94,8 @@ plt.suptitle(med, fontsize=15)
 # Save
 plot_name = os.path.basename(__file__).split(".")[0]
 dir_name = os.path.dirname(os.path.realpath(__file__)).split("\\")[-1]
-plt.savefig(f"../../../Figures/{dir_name}/{plot_name}.svg", format="svg", bbox_inches="tight", transparent=True)
-plt.savefig(f"../../../Figures/{dir_name}/{plot_name}.png", format="png", bbox_inches="tight", transparent=True)
+plt.savefig(f"../../../../Figures/{dir_name}/{plot_name}.svg", format="svg", bbox_inches="tight", transparent=True)
+plt.savefig(f"../../../../Figures/{dir_name}/{plot_name}.png", format="png", bbox_inches="tight", transparent=True)
 
 # Get the average time after peak of stimulation
 print(np.mean(np.nanmedian(stim_time - peak_speed_time, axis=(1, 2))))
@@ -133,6 +133,6 @@ ax.legend(fontsize=fontsize-2)
 # Save
 plot_name = os.path.basename(__file__).split(".")[0]
 dir_name = os.path.dirname(os.path.realpath(__file__)).split("\\")[-1]
-plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_times.pdf", format="pdf", transparent=True, bbox_inches="tight")
-plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_times.png", format="png", transparent=True, bbox_inches="tight")
+plt.savefig(f"../../../../Figures/{dir_name}/{plot_name}_times.pdf", format="pdf", transparent=True, bbox_inches="tight")
+plt.savefig(f"../../../../Figures/{dir_name}/{plot_name}_times.png", format="png", transparent=True, bbox_inches="tight")
 plt.show()

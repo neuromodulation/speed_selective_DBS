@@ -16,9 +16,9 @@ matplotlib.use('TkAgg')
 med = "Off"
 
 # Load matrix containing 0/1 indicating which trial was stimulated
-stim = np.load(f"../../../Data/{med}/processed_data/stim.npy")
-slow = np.load(f"../../../Data/{med}/processed_data/slow.npy")
-fast = np.load(f"../../../Data/{med}/processed_data/fast.npy")
+stim = np.load(f"../../../../Data/{med}/processed_data/stim.npy")
+slow = np.load(f"../../../../Data/{med}/processed_data/slow.npy")
+fast = np.load(f"../../../../Data/{med}/processed_data/fast.npy")
 
 # Select only stimulation blocks
 stim = stim[:, :, 0, :]
@@ -95,8 +95,8 @@ plt.subplots_adjust(bottom=0.15, left=0.2)
 # Save
 plot_name = os.path.basename(__file__).split(".")[0]
 dir_name = os.path.dirname(os.path.realpath(__file__)).split("\\")[-1]
-plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_{med}.svg", format="svg", bbox_inches="tight", transparent=True)
-plt.savefig(f"../../../Figures/{dir_name}/{plot_name}_{med}.png", format="png", bbox_inches="tight", transparent=True)
+plt.savefig(f"../../../../Figures/{dir_name}/{plot_name}_{med}.svg", format="svg", bbox_inches="tight", transparent=True)
+plt.savefig(f"../../../../Figures/{dir_name}/{plot_name}_{med}.png", format="png", bbox_inches="tight", transparent=True)
 
 
 plt.show()
